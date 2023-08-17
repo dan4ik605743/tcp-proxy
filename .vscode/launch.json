@@ -1,0 +1,32 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Client",
+            "program": "${workspaceFolder}/target/debug/client",
+            "args": [],
+            "cwd": "${workspaceFolder}",
+            "preLaunchTask": "rust: cargo build"
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Server",
+            "program": "${workspaceFolder}/target/debug/server",
+            "args": [],
+            "cwd": "${workspaceFolder}",
+            "preLaunchTask": "rust: cargo build"
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Proxy",
+            "program": "${workspaceFolder}/target/debug/proxy",
+            "args": [],
+            "cwd": "${workspaceFolder}",
+            "preLaunchTask": "rust: cargo build"
+        }
+    ]
+}
