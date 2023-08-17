@@ -16,7 +16,7 @@ where
     let bytes: Bytes = serde_json::to_vec(&message)?.into();
     // let bytes = serde_json::to_vec(&message)?;
     stream.write_u64(bytes.len() as u64).await?;
-    stream.write_all(&bytes[..]).await?;
+    stream.write_all(&bytes).await?;
     Ok(())
 }
 
@@ -32,8 +32,8 @@ where
         unsafe {
             buf.set_len(message_size);
         }
-        stream.read_exact(&mut buf[..]).await?;
-        Ok(serde_json::from_slice(&buf[..])?)
+        stream.read_exact(&mut buf).await?;
+        Ok(serde_json::from_slice(&buf)?)
     } else {
         Err(tokio::io::Error::new(
             ErrorKind::Other,

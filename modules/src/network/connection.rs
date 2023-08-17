@@ -1,4 +1,4 @@
-use anyhow::Result;
+use anyhow::{anyhow, Result};
 
 use tokio::net::TcpStream;
 
@@ -11,7 +11,7 @@ pub async fn connect_to_server(ip: &str, port: u32, format: &str) -> Result<TcpS
         }
         Err(err) => {
             tracing::info!("{format}reconnecting...");
-            Err(anyhow::anyhow!("{format}{err}"))
+            Err(anyhow!("{format}{err}"))
         }
     }
 }

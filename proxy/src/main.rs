@@ -5,18 +5,19 @@ use clap::Parser;
 
 use tokio::net::TcpListener;
 
-use modules::{logger, settings::config};
+use modules::{
+    logger,
+    settings::{args, config},
+};
 
-mod args;
 mod proxy;
-
 use proxy::Proxy;
 
 #[tokio::main]
 async fn main() -> Result<()> {
     logger::init_logger();
 
-    let args = args::Args::parse();
+    let args = args::Proxy::parse();
     let config = config::init_config(
         config::Proxy::new(
             args.ip,
@@ -45,7 +46,7 @@ async fn main() -> Result<()> {
         _ = exit => (),
     }
 
-    tracing::info!("Proxy exited");
+    tracing::info!("Proxy shutdowned");
     Ok(())
 }
 

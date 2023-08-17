@@ -13,7 +13,7 @@ mod network;
 async fn main() -> Result<()> {
     logger::init_logger();
 
-    let args = args::Args::parse();
+    let args = args::ClientOrServer::parse();
     let config = config::init_config(config::ClientOrServer::new(args.ip, args.port), args.config)?;
 
     let lost_msg: Option<Msg> = None;

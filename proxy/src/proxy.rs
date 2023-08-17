@@ -1,5 +1,5 @@
 use std::{
-    collections::HashMap,
+    collections::{hash_map::Entry, HashMap},
     net::{IpAddr, SocketAddr},
     sync::Mutex,
 };
@@ -32,28 +32,30 @@ impl Proxy {
 }
 
 impl Proxy {
-    pub fn add_user(&self, user: IpAddr) {
-        let mut map = self.users.lock().unwrap();
-        let count = map.entry(user).or_insert(0);
-        *count += 1;
+    fn add_user(&self, user: IpAddr) {
+        self.users
+            .lock()
+            .unwrap()
+            .entry(user)
+            .and_modify(|val| *val += 1)
+            .or_insert(1);
     }
 
-    pub fn del_user(&self, user: IpAddr) {
+    fn del_user(&self, user: IpAddr) {
         let mut map = self.users.lock().unwrap();
-        if let Some(connections) = map.remove(&user) {
-            if connections != 1 {
-                map.insert(user, connections - 1);
+
+        if let Entry::Occupied(user) = map.entry(user).and_modify(|connections| *connections -= 1) {
+            if user.get() == &0 {
+                user.remove_entry();
             }
         }
     }
 
-    pub fn check_user(&self, user: IpAddr) -> bool {
-        let map = self.users.lock().unwrap();
-        if let Some(connections) = map.get(&user) {
-            connections < &self.connection_restrictions
-        } else {
-            true
+    fn check_user(&self, user: IpAddr) -> bool {
+        if let Some(connections) = self.users.lock().unwrap().get(&user) {
+            return connections < &self.connection_restrictions;
         }
+        true
     }
 }
 
@@ -85,31 +87,32 @@ impl Proxy {
         let (client_reader, client_writer) = client_stream.into_split();
         let (server_reader, server_writer) = server_stream.into_split();
 
-        let mut client_to_server = {
-            let logs = ("{user}connection lost", "Server: timeout reading data");
-            tokio::spawn(async move {
-                Self::client_or_server(
-                    client_reader,
-                    server_writer,
-                    logs,
-                    Duration::from_secs(timeout_message),
-                )
-                .await;
-            })
-        };
+        let logs = (
+            format!("{user}connection lost"),
+            "Server: timeout reading data".to_owned(),
+            "Server: connection lost".to_owned(),
+            format!("{user}timeout reading data"),
+        );
 
-        let mut server_to_client = {
-            let logs = ("Server: connection lost", "{user}timeout reading data");
-            tokio::spawn(async move {
-                Self::client_or_server(
-                    server_reader,
-                    client_writer,
-                    logs,
-                    Duration::from_secs(timeout_message),
-                )
-                .await;
-            })
-        };
+        let mut client_to_server = tokio::spawn(async move {
+            Self::transfer_data(
+                client_reader,
+                server_writer,
+                (logs.0, logs.1),
+                Duration::from_secs(timeout_message),
+            )
+            .await
+        });
+
+        let mut server_to_client = tokio::spawn(async move {
+            Self::transfer_data(
+                server_reader,
+                client_writer,
+                (logs.2, logs.3),
+                Duration::from_secs(timeout_message),
+            )
+            .await
+        });
 
         tokio::select! {
             _ = &mut client_to_server => (),
@@ -123,11 +126,11 @@ impl Proxy {
         self.del_user(client_address.ip());
     }
 
-    async fn client_or_server<Reader, Writer>(
+    async fn transfer_data<Reader, Writer>(
         mut reader: Reader,
         mut writer: Writer,
 
-        logs: (&str, &str),
+        logs: (String, String),
         timeout_message: Duration,
     ) where
         Reader: AsyncReadExt + Unpin,
