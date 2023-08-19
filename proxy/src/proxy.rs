@@ -11,6 +11,7 @@ use tokio::{
 };
 
 use modules::{async_utils, network::connection};
+
 pub struct Proxy {
     users: Mutex<HashMap<IpAddr, usize>>,
     connection_restrictions: usize,
@@ -158,3 +159,6 @@ impl Proxy {
         }
     }
 }
+
+#[cfg(test)]
+mod tests;

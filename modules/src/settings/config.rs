@@ -105,3 +105,6 @@ fn read_config<T: Config>(config_path: &str) -> Result<T> {
     let settings: T = serde_json::from_str(&fs::read_to_string(config_path)?)?;
     Ok(settings)
 }
+
+#[cfg(test)]
+mod tests;
